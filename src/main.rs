@@ -1,3 +1,5 @@
+use rusty_knight::core::app;
+
 fn main() {
-    println!("Hello, world!");
+    app::run_game();
 }
