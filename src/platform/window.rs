@@ -4,6 +4,8 @@ use winit::{
     window::{Window, WindowAttributes},
 };
 
+use crate::constants::graphics;
+
 pub struct GameWindow {
     _inner: Window,
 }
@@ -14,7 +16,10 @@ impl GameWindow {
             .create_window(
                 WindowAttributes::default()
                     .with_title("Rusty Knight")
-                    .with_inner_size(winit::dpi::LogicalSize::new(16.0 * 80.0, 45.0 * 16.0)),
+                    .with_inner_size(winit::dpi::LogicalSize::new(
+                        graphics::MAP_WDITH_PIXELS,
+                        graphics::MAP_HEIGHT_PIXELS,
+                    )),
             )
             .unwrap();
 

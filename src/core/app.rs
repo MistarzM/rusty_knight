@@ -24,8 +24,15 @@ impl App {
 
     /// Start game loop
     pub fn run() {
+        // EventLoop::new() :
+        // - creates the event loop strucutre
         let event_loop = EventLoop::new().unwrap();
         let mut app = App::new();
+        // run_app() :
+        // - takes over program execution
+        // - enters the OS event loop
+        // - begins processing events and calling handlers
+        // [ resumed() -> window_event() - continues - until - exit -> ... ]
         event_loop.run_app(&mut app).unwrap();
     }
 }
