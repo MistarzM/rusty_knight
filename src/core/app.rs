@@ -1,5 +1,8 @@
 use crate::platform::window::GameWindow;
-use winit::{application::ApplicationHandler, event_loop::ActiveEventLoop};
+use winit::{
+    application::ApplicationHandler,
+    event_loop::{ActiveEventLoop, EventLoop},
+};
 
 #[derive(Default)]
 pub struct App {
@@ -8,13 +11,22 @@ pub struct App {
 
 impl App {
     /// Creates a new application instance
-    pub fn new() -> Self {
+    fn new() -> Self {
+        // default:
+        // window: None
         Self::default()
     }
 
     /// Provides access to the window if it exist
     pub fn window(&self) -> Option<&GameWindow> {
         self.window.as_ref()
+    }
+
+    /// Start game loop
+    pub fn run() {
+        let event_loop = EventLoop::new().unwrap();
+        let mut app = App::new();
+        event_loop.run_app(&mut app).unwrap();
     }
 }
 

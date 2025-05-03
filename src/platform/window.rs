@@ -14,7 +14,7 @@ impl GameWindow {
             .create_window(
                 WindowAttributes::default()
                     .with_title("Rusty Knight")
-                    .with_inner_size(winit::dpi::LogicalSize::new(800.0, 600.0)),
+                    .with_inner_size(winit::dpi::LogicalSize::new(16.0 * 80.0, 45.0 * 16.0)),
             )
             .unwrap();
 
