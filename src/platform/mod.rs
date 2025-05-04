@@ -1,2 +1,2 @@
+pub mod game_window;
 pub mod input;
-pub mod window;
