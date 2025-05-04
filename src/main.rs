@@ -1,5 +1,5 @@
-use rusty_knight::core::app::App;
+use rusty_knight::core::app;
 
 fn main() {
-    pollster::block_on(App::run());
+    pollster::block_on(app::run());
 }

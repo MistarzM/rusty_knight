@@ -1,22 +1,43 @@
-use crate::constants::{gameplay, graphics};
 use crate::platform::game_window::GameWindow;
+use crate::render::graphics_state::GraphicsState;
+use glfw::{Action, Key};
 
-pub struct App;
+pub async fn run() {
+    let mut game_window = GameWindow::new("Rusty Knight");
+    let mut graphics_state = GraphicsState::new(&mut game_window.window).await;
 
-impl App {
-    pub async fn run() {
-        let mut game_window = GameWindow::new(
-            "Rusty Knight",
-            graphics::MAP_WDITH_PIXELS,
-            graphics::MAP_HEIGHT_PIXELS,
-        );
+    graphics_state.window.set_framebuffer_size_polling(true);
+    graphics_state.window.set_key_polling(true);
+    graphics_state.window.set_mouse_button_polling(true);
+    graphics_state.window.set_pos_polling(true);
 
-        if gameplay::USE_MOUSE {
-            game_window.window_mut().set_all_polling(true);
-        } else {
-            game_window.window_mut().set_key_polling(true);
+    while !graphics_state.window.should_close() {
+        game_window.glfw.poll_events();
+
+        for (_, event) in glfw::flush_messages(&game_window.events) {
+            match event {
+                glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
+                    graphics_state.window.set_should_close(true);
+                }
+                glfw::WindowEvent::Pos(..) => {
+                    graphics_state.update_surface();
+                    graphics_state.resize(graphics_state.size);
+                }
+                glfw::WindowEvent::FramebufferSize(width, height) => {
+                    graphics_state.update_surface();
+                    graphics_state.resize((width, height));
+                }
+                _ => {} //e => println!("Action: {e:?}"),
+            }
         }
 
-        game_window.run_game_loop().await;
+        match graphics_state.render() {
+            Ok(_) => {}
+            Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
+                graphics_state.update_surface();
+                graphics_state.resize(graphics_state.size);
+            }
+            Err(e) => eprintln!("{e:?}"),
+        }
     }
 }
