@@ -1,5 +1,5 @@
 use rusty_knight::core::app::App;
 
 fn main() {
-    App::run();
+    pollster::block_on(App::run());
 }
