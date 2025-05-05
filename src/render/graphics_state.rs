@@ -1,3 +1,4 @@
+use crate::render::renderer_backend::pipeline_builder::PipelineBuilder;
 use glfw::PWindow;
 
 pub struct GraphicsState<'a> {
@@ -8,6 +9,7 @@ pub struct GraphicsState<'a> {
     config: wgpu::SurfaceConfiguration,
     pub size: (i32, i32),
     pub window: &'a mut PWindow,
+    render_pipeline: wgpu::RenderPipeline,
 }
 
 impl<'a> GraphicsState<'a> {
@@ -58,6 +60,11 @@ impl<'a> GraphicsState<'a> {
         };
         surface.configure(&device, &config);
 
+        let mut pipeline_builder = PipelineBuilder::new();
+        pipeline_builder.set_shader_module("shaders/shader.wgsl", "vs_main", "fs_main");
+        pipeline_builder.set_pixel_format(config.format);
+        let render_pipeline = pipeline_builder.build_pipeline(&device);
+
         Self {
             instance,
             window,
@@ -66,6 +73,7 @@ impl<'a> GraphicsState<'a> {
             queue,
             config,
             size,
+            render_pipeline,
         }
     }
 
@@ -104,7 +112,11 @@ impl<'a> GraphicsState<'a> {
             timestamp_writes: None,
         };
 
-        command_encoder.begin_render_pass(&render_pass_descriptor);
+        {
+            let mut renderpass = command_encoder.begin_render_pass(&render_pass_descriptor);
+            renderpass.set_pipeline(&self.render_pipeline);
+            renderpass.draw(0..3, 0..1);
+        }
         self.queue.submit(std::iter::once(command_encoder.finish()));
 
         drawable.present();

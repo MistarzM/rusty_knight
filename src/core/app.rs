@@ -19,10 +19,12 @@ pub async fn run() {
                 glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
                     graphics_state.window.set_should_close(true);
                 }
+                // Window was moved
                 glfw::WindowEvent::Pos(..) => {
                     graphics_state.update_surface();
                     graphics_state.resize(graphics_state.size);
                 }
+                // Window was resized
                 glfw::WindowEvent::FramebufferSize(width, height) => {
                     graphics_state.update_surface();
                     graphics_state.resize((width, height));
