@@ -1,4 +1,4 @@
-use crate::render::renderer_backend::pipeline_builder::PipelineBuilder;
+use crate::render::renderer_backend::{mesh_builder, pipeline_builder::PipelineBuilder};
 use glfw::PWindow;
 
 pub struct GraphicsState<'a> {
@@ -10,6 +10,7 @@ pub struct GraphicsState<'a> {
     pub size: (i32, i32),
     pub window: &'a mut PWindow,
     render_pipeline: wgpu::RenderPipeline,
+    traingle_mesh: wgpu::Buffer,
 }
 
 impl<'a> GraphicsState<'a> {
@@ -60,7 +61,10 @@ impl<'a> GraphicsState<'a> {
         };
         surface.configure(&device, &config);
 
+        let traingle_mesh = mesh_builder::make_triangle(&device);
+
         let mut pipeline_builder = PipelineBuilder::new();
+        pipeline_builder.add_buffer_layout(mesh_builder::Vertex::get_layout());
         pipeline_builder.set_shader_module("shaders/shader.wgsl", "vs_main", "fs_main");
         pipeline_builder.set_pixel_format(config.format);
         let render_pipeline = pipeline_builder.build_pipeline(&device);
@@ -74,6 +78,7 @@ impl<'a> GraphicsState<'a> {
             config,
             size,
             render_pipeline,
+            traingle_mesh,
         }
     }
 
@@ -115,6 +120,7 @@ impl<'a> GraphicsState<'a> {
         {
             let mut renderpass = command_encoder.begin_render_pass(&render_pass_descriptor);
             renderpass.set_pipeline(&self.render_pipeline);
+            renderpass.set_vertex_buffer(0, self.traingle_mesh.slice(..));
             renderpass.draw(0..3, 0..1);
         }
         self.queue.submit(std::iter::once(command_encoder.finish()));
