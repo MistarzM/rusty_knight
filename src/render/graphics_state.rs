@@ -11,6 +11,7 @@ pub struct GraphicsState<'a> {
     pub window: &'a mut PWindow,
     render_pipeline: wgpu::RenderPipeline,
     traingle_mesh: wgpu::Buffer,
+    quad_mesh: mesh_builder::Mesh,
 }
 
 impl<'a> GraphicsState<'a> {
@@ -62,6 +63,7 @@ impl<'a> GraphicsState<'a> {
         surface.configure(&device, &config);
 
         let traingle_mesh = mesh_builder::make_triangle(&device);
+        let quad_mesh = mesh_builder::make_quad(&device);
 
         let mut pipeline_builder = PipelineBuilder::new();
         pipeline_builder.add_buffer_layout(mesh_builder::Vertex::get_layout());
@@ -79,6 +81,7 @@ impl<'a> GraphicsState<'a> {
             size,
             render_pipeline,
             traingle_mesh,
+            quad_mesh,
         }
     }
 
@@ -120,6 +123,14 @@ impl<'a> GraphicsState<'a> {
         {
             let mut renderpass = command_encoder.begin_render_pass(&render_pass_descriptor);
             renderpass.set_pipeline(&self.render_pipeline);
+
+            renderpass.set_vertex_buffer(0, self.quad_mesh.vertex_buffer.slice(..));
+            renderpass.set_index_buffer(
+                self.quad_mesh.index_buffer.slice(..),
+                wgpu::IndexFormat::Uint16,
+            );
+            renderpass.draw_indexed(0..6, 0, 0..1);
+
             renderpass.set_vertex_buffer(0, self.traingle_mesh.slice(..));
             renderpass.draw(0..3, 0..1);
         }
