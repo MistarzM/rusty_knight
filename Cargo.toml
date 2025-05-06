@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-glfw="0.59.0"
-wgpu="25.0.0"
-pollster="0.4.0"
-glm="0.2.3"
+glfw = "0.59.0"
+wgpu = "25.0.0"
+pollster = "0.4.0"
+glm = "0.2.3"
+image = "0.25.6"
