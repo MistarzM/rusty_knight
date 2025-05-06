@@ -1,7 +1,7 @@
 use crate::render::renderer_backend::mesh_builder;
 use glfw::PWindow;
 
-use super::renderer_backend::{bind_group_layout, pipeline};
+use super::renderer_backend::{bind_group_layout, material::Material, pipeline};
 
 pub struct GraphicsState<'a> {
     instance: wgpu::Instance,
@@ -14,6 +14,8 @@ pub struct GraphicsState<'a> {
     render_pipeline: wgpu::RenderPipeline,
     traingle_mesh: wgpu::Buffer,
     quad_mesh: mesh_builder::Mesh,
+    triangle_material: Material,
+    quad_material: Material,
 }
 
 impl<'a> GraphicsState<'a> {
@@ -84,6 +86,19 @@ impl<'a> GraphicsState<'a> {
             render_pipeline = builder.build_pipeline("Render pipeline");
         }
 
+        let quad_material = Material::new(
+            "levels/level_1_hitBox.png",
+            &device,
+            &queue,
+            &material_bind_group_layout,
+        );
+        let triangle_material = Material::new(
+            "levels/level_1_design.png",
+            &device,
+            &queue,
+            &material_bind_group_layout,
+        );
+
         Self {
             instance,
             window,
@@ -95,6 +110,8 @@ impl<'a> GraphicsState<'a> {
             render_pipeline,
             traingle_mesh,
             quad_mesh,
+            triangle_material,
+            quad_material,
         }
     }
 
@@ -137,6 +154,7 @@ impl<'a> GraphicsState<'a> {
             let mut renderpass = command_encoder.begin_render_pass(&render_pass_descriptor);
             renderpass.set_pipeline(&self.render_pipeline);
 
+            renderpass.set_bind_group(0, &self.quad_material.bind_group, &[]);
             renderpass.set_vertex_buffer(0, self.quad_mesh.vertex_buffer.slice(..));
             renderpass.set_index_buffer(
                 self.quad_mesh.index_buffer.slice(..),
@@ -144,6 +162,7 @@ impl<'a> GraphicsState<'a> {
             );
             renderpass.draw_indexed(0..6, 0, 0..1);
 
+            renderpass.set_bind_group(0, &self.triangle_material.bind_group, &[]);
             renderpass.set_vertex_buffer(0, self.traingle_mesh.slice(..));
             renderpass.draw(0..3, 0..1);
         }
