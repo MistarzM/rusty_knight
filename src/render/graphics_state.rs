@@ -1,5 +1,7 @@
-use crate::render::renderer_backend::{mesh_builder, pipeline_builder::PipelineBuilder};
+use crate::render::renderer_backend::mesh_builder;
 use glfw::PWindow;
+
+use super::renderer_backend::{bind_group_layout, pipeline};
 
 pub struct GraphicsState<'a> {
     instance: wgpu::Instance,
@@ -65,11 +67,22 @@ impl<'a> GraphicsState<'a> {
         let traingle_mesh = mesh_builder::make_triangle(&device);
         let quad_mesh = mesh_builder::make_quad(&device);
 
-        let mut pipeline_builder = PipelineBuilder::new();
-        pipeline_builder.add_buffer_layout(mesh_builder::Vertex::get_layout());
-        pipeline_builder.set_shader_module("shaders/shader.wgsl", "vs_main", "fs_main");
-        pipeline_builder.set_pixel_format(config.format);
-        let render_pipeline = pipeline_builder.build_pipeline(&device);
+        let material_bind_group_layout: wgpu::BindGroupLayout;
+        {
+            let mut builder = bind_group_layout::Builder::new(&device);
+            builder.add_material();
+            material_bind_group_layout = builder.build("Material Bind Group Layout");
+        }
+
+        let render_pipeline: wgpu::RenderPipeline;
+        {
+            let mut builder = pipeline::Builder::new(&device);
+            builder.set_shader_module("shaders/shader.wgsl", "vs_main", "fs_main");
+            builder.set_pixel_format(config.format);
+            builder.add_vertex_buffer_layout(mesh_builder::Vertex::get_layout());
+            builder.add_bind_group_layout(&material_bind_group_layout);
+            render_pipeline = builder.build_pipeline("Render pipeline");
+        }
 
         Self {
             instance,
