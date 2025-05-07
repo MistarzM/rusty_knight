@@ -40,7 +40,7 @@ impl<'a> GraphicsState<'a> {
             required_features: wgpu::Features::empty(),
             required_limits: wgpu::Limits::default(),
             label: Some("Device"),
-            memory_hints: Default::default(),
+            memory_hints: wgpu::MemoryHints::Performance,
             trace: Default::default(),
         };
 
@@ -155,9 +155,9 @@ impl<'a> GraphicsState<'a> {
             renderpass.set_pipeline(&self.render_pipeline);
 
             renderpass.set_bind_group(0, &self.quad_material.bind_group, &[]);
-            renderpass.set_vertex_buffer(0, self.quad_mesh.vertex_buffer.slice(..));
+            renderpass.set_vertex_buffer(0, self.quad_mesh.buffer.slice(0..self.quad_mesh.offset));
             renderpass.set_index_buffer(
-                self.quad_mesh.index_buffer.slice(..),
+                self.quad_mesh.buffer.slice(self.quad_mesh.offset..),
                 wgpu::IndexFormat::Uint16,
             );
             renderpass.draw_indexed(0..6, 0, 0..1);
