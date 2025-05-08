@@ -1,7 +1,32 @@
+use super::renderer_backend::ubo::{self, UBO};
+use super::renderer_backend::{bind_group_layout, material::Material, pipeline};
+use crate::render::model::game_object;
 use crate::render::renderer_backend::mesh_builder;
 use glfw::PWindow;
+use glm::ext;
 
-use super::renderer_backend::{bind_group_layout, material::Material, pipeline};
+pub struct World {
+    pub quads: Vec<game_object::Object>,
+    pub tris: Vec<game_object::Object>,
+}
+
+impl World {
+    pub fn new() -> Self {
+        World {
+            quads: Vec::new(),
+            tris: Vec::new(),
+        }
+    }
+
+    pub fn update(&mut self, dt: f32) {
+        for i in 0..self.tris.len() {
+            self.tris[i].angle += 0.001 * dt;
+            if self.tris[i].angle > 360.0 {
+                self.tris[i].angle -= 360.0;
+            }
+        }
+    }
+}
 
 pub struct GraphicsState<'a> {
     instance: wgpu::Instance,
@@ -16,6 +41,7 @@ pub struct GraphicsState<'a> {
     quad_mesh: mesh_builder::Mesh,
     triangle_material: Material,
     quad_material: Material,
+    ubo: Option<ubo::UBO>,
 }
 
 impl<'a> GraphicsState<'a> {
@@ -76,6 +102,13 @@ impl<'a> GraphicsState<'a> {
             material_bind_group_layout = builder.build("Material Bind Group Layout");
         }
 
+        let ubo_bind_group_layout: wgpu::BindGroupLayout;
+        {
+            let mut builder = bind_group_layout::Builder::new(&device);
+            builder.add_ubo();
+            ubo_bind_group_layout = builder.build("Ubo Bind Group Layout");
+        }
+
         let render_pipeline: wgpu::RenderPipeline;
         {
             let mut builder = pipeline::Builder::new(&device);
@@ -83,11 +116,12 @@ impl<'a> GraphicsState<'a> {
             builder.set_pixel_format(config.format);
             builder.add_vertex_buffer_layout(mesh_builder::Vertex::get_layout());
             builder.add_bind_group_layout(&material_bind_group_layout);
+            builder.add_bind_group_layout(&ubo_bind_group_layout);
             render_pipeline = builder.build_pipeline("Render pipeline");
         }
 
         let quad_material = Material::new(
-            "levels/level_1_hitBox.png",
+            "levels/level_2_design.png",
             &device,
             &queue,
             &material_bind_group_layout,
@@ -112,10 +146,64 @@ impl<'a> GraphicsState<'a> {
             quad_mesh,
             triangle_material,
             quad_material,
+            ubo: None,
         }
     }
 
-    pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+    pub fn build_ubos_for_objects(&mut self, object_count: usize) {
+        let ubo_bind_group_layout: wgpu::BindGroupLayout;
+        {
+            let mut builder = bind_group_layout::Builder::new(&self.device);
+            builder.add_ubo();
+            ubo_bind_group_layout = builder.build("Ubo Bind Group Layout");
+        }
+
+        self.ubo = Some(UBO::new(&self.device, object_count, ubo_bind_group_layout));
+    }
+
+    pub fn render(
+        &mut self,
+        quads: &Vec<game_object::Object>,
+        tris: &Vec<game_object::Object>,
+    ) -> Result<(), wgpu::SurfaceError> {
+        let mut offset: u64 = 0;
+        for i in 0..quads.len() {
+            let c0 = glm::Vec4::new(1.0, 0.0, 0.0, 0.0);
+            let c1 = glm::Vec4::new(0.0, 1.0, 0.0, 0.0);
+            let c2 = glm::Vec4::new(0.0, 0.0, 1.0, 0.0);
+            let c3 = glm::Vec4::new(0.0, 0.0, 0.0, 1.0);
+            let m1 = glm::Matrix4::new(c0, c1, c2, c3);
+            let m2 = glm::Matrix4::new(c0, c1, c2, c3);
+
+            let matrix = ext::rotate(&m1, quads[i].angle, glm::Vec3::new(0.0, 0.0, 0.1))
+                * ext::translate(&m2, quads[i].position);
+            self.ubo
+                .as_mut()
+                .unwrap()
+                .upload(offset + i as u64, &matrix, &self.queue);
+        }
+
+        offset += quads.len() as u64;
+
+        for i in 0..tris.len() {
+            let c0 = glm::Vec4::new(1.0, 0.0, 0.0, 0.0);
+            let c1 = glm::Vec4::new(0.0, 1.0, 0.0, 0.0);
+            let c2 = glm::Vec4::new(0.0, 0.0, 1.0, 0.0);
+            let c3 = glm::Vec4::new(0.0, 0.0, 0.0, 1.0);
+            let m1 = glm::Matrix4::new(c0, c1, c2, c3);
+            let m2 = glm::Matrix4::new(c0, c1, c2, c3);
+            let matrix = ext::rotate(&m1, tris[i].angle, glm::Vec3::new(0.0, 0.0, 0.1))
+                * ext::translate(&m2, tris[i].position);
+            self.ubo
+                .as_mut()
+                .unwrap()
+                .upload(offset + i as u64, &matrix, &self.queue);
+        }
+
+        let event = self.queue.submit([]);
+        let maintain = wgpu::MaintainBase::WaitForSubmissionIndex(event);
+        let _ = self.device.poll(maintain);
+
         let drawable = self.surface.get_current_texture()?;
         let image_view_descriptor = wgpu::TextureViewDescriptor::default();
         let image_veiw = drawable.texture.create_view(&image_view_descriptor);
@@ -160,11 +248,27 @@ impl<'a> GraphicsState<'a> {
                 self.quad_mesh.buffer.slice(self.quad_mesh.offset..),
                 wgpu::IndexFormat::Uint16,
             );
-            renderpass.draw_indexed(0..6, 0, 0..1);
+            let mut offset: usize = 0;
+            for i in 0..quads.len() {
+                renderpass.set_bind_group(
+                    1,
+                    &(self.ubo.as_ref().unwrap()).bind_groups[offset + i],
+                    &[],
+                );
+                renderpass.draw_indexed(0..6, 0, 0..1);
+            }
 
             renderpass.set_bind_group(0, &self.triangle_material.bind_group, &[]);
             renderpass.set_vertex_buffer(0, self.traingle_mesh.slice(..));
-            renderpass.draw(0..3, 0..1);
+            offset += quads.len();
+            for i in 0..tris.len() {
+                renderpass.set_bind_group(
+                    1,
+                    &(self.ubo.as_ref().unwrap()).bind_groups[offset + i],
+                    &[],
+                );
+                renderpass.draw(0..3, 0..1);
+            }
         }
         self.queue.submit(std::iter::once(command_encoder.finish()));
 
