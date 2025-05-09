@@ -37,7 +37,7 @@ pub struct GraphicsState<'a> {
     pub size: (i32, i32),
     pub window: &'a mut PWindow,
     render_pipeline: wgpu::RenderPipeline,
-    traingle_mesh: wgpu::Buffer,
+    triangle_mesh: wgpu::Buffer,
     quad_mesh: mesh_builder::Mesh,
     triangle_material: Material,
     quad_material: Material,
@@ -93,7 +93,7 @@ impl<'a> GraphicsState<'a> {
         };
         surface.configure(&device, &config);
 
-        let traingle_mesh = mesh_builder::make_triangle(&device);
+        let triangle_mesh = mesh_builder::make_triangle(&device);
         let quad_mesh = mesh_builder::make_quad(&device);
 
         let material_bind_group_layout: wgpu::BindGroupLayout;
@@ -146,7 +146,7 @@ impl<'a> GraphicsState<'a> {
             config,
             size,
             render_pipeline,
-            traingle_mesh,
+            triangle_mesh,
             quad_mesh,
             triangle_material,
             quad_material,
@@ -226,8 +226,8 @@ impl<'a> GraphicsState<'a> {
     ) -> Result<(), wgpu::SurfaceError> {
         self.device.poll(wgpu::MaintainBase::Wait).ok();
 
-        // upload
         self.update_projection();
+
         self.update_transforms(quads, tris);
 
         let event = self.queue.submit([]);
@@ -236,32 +236,31 @@ impl<'a> GraphicsState<'a> {
 
         let drawable = self.surface.get_current_texture()?;
         let image_view_descriptor = wgpu::TextureViewDescriptor::default();
-        let image_veiw = drawable.texture.create_view(&image_view_descriptor);
+        let image_view = drawable.texture.create_view(&image_view_descriptor);
 
         let command_encoder_descriptor = wgpu::CommandEncoderDescriptor {
             label: Some("Render Encoder"),
         };
-
         let mut command_encoder = self
             .device
             .create_command_encoder(&command_encoder_descriptor);
 
         let color_attachment = wgpu::RenderPassColorAttachment {
-            view: &image_veiw,
+            view: &image_view,
             resolve_target: None,
             ops: wgpu::Operations {
                 load: wgpu::LoadOp::Clear(wgpu::Color {
-                    r: 0.25,
-                    g: 0.0,
-                    b: 0.5,
-                    a: 0.0,
+                    r: 0.75,
+                    g: 0.5,
+                    b: 0.25,
+                    a: 1.0,
                 }),
                 store: wgpu::StoreOp::Store,
             },
         };
 
         let render_pass_descriptor = wgpu::RenderPassDescriptor {
-            label: Some("Renderpass"),
+            label: Some("Render Pass"),
             color_attachments: &[Some(color_attachment)],
             depth_stencil_attachment: None,
             occlusion_query_set: None,
@@ -272,8 +271,10 @@ impl<'a> GraphicsState<'a> {
             let mut renderpass = command_encoder.begin_render_pass(&render_pass_descriptor);
             renderpass.set_pipeline(&self.render_pipeline);
 
+            renderpass.set_bind_group(2, &self.projection_ubo.bind_group, &[]);
+
+            // Quads
             renderpass.set_bind_group(0, &self.quad_material.bind_group, &[]);
-            renderpass.set_bind_group(0, &self.projection_ubo.bind_group, &[]);
             renderpass.set_vertex_buffer(0, self.quad_mesh.buffer.slice(0..self.quad_mesh.offset));
             renderpass.set_index_buffer(
                 self.quad_mesh.buffer.slice(self.quad_mesh.offset..),
@@ -289,9 +290,10 @@ impl<'a> GraphicsState<'a> {
                 renderpass.draw_indexed(0..6, 0, 0..1);
             }
 
+            // Triangles
             renderpass.set_bind_group(0, &self.triangle_material.bind_group, &[]);
-            renderpass.set_vertex_buffer(0, self.traingle_mesh.slice(..));
-            offset += quads.len();
+            renderpass.set_vertex_buffer(0, self.triangle_mesh.slice(..));
+            offset = quads.len();
             for i in 0..tris.len() {
                 renderpass.set_bind_group(
                     1,
@@ -302,6 +304,7 @@ impl<'a> GraphicsState<'a> {
             }
         }
         self.queue.submit(std::iter::once(command_encoder.finish()));
+        self.device.poll(wgpu::MaintainBase::wait()).ok();
 
         drawable.present();
 

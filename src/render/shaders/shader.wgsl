@@ -18,7 +18,7 @@ struct VertexPayload {
 fn vs_main(vertex: Vertex) -> VertexPayload {
 
     var out: VertexPayload;
-    out.position = model * vec4<f32>(vertex.position, 1.0);
+    out.position = projection * model * vec4<f32>(vertex.position, 1.0);
     out.color = vertex.color;
     out.texCoord = vec2<f32>(0.5 * (vertex.position.x + 1f), -0.5 * (vertex.position.y + 1f));
     return out;

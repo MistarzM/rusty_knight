@@ -24,7 +24,7 @@ impl<'a> Builder<'a> {
         }
     }
 
-    pub fn reset(&mut self) {
+    fn reset(&mut self) {
         self.vertex_buffer_layouts.clear();
         self.bind_group_layouts.clear();
     }
@@ -41,11 +41,11 @@ impl<'a> Builder<'a> {
         &mut self,
         shader_filename: &str,
         vertex_entry: &str,
-        fragmet_entry: &str,
+        fragment_entry: &str,
     ) {
         self.shader_filename = shader_filename.to_string();
         self.vertex_entry = vertex_entry.to_string();
-        self.fragment_entry = fragmet_entry.to_string();
+        self.fragment_entry = fragment_entry.to_string();
     }
 
     pub fn set_pixel_format(&mut self, pixel_format: wgpu::TextureFormat) {
@@ -57,7 +57,7 @@ impl<'a> Builder<'a> {
         filepath.push("src/render/");
         filepath.push(self.shader_filename.as_str());
         let filepath = filepath.into_os_string().into_string().unwrap();
-        let source_code = fs::read_to_string(filepath).expect("Cannot read source code!");
+        let source_code = fs::read_to_string(filepath).expect("Can't read source code!");
 
         let shader_module_descriptor = wgpu::ShaderModuleDescriptor {
             label: Some("Shader Module"),
@@ -66,11 +66,11 @@ impl<'a> Builder<'a> {
         let shader_module = self.device.create_shader_module(shader_module_descriptor);
 
         let pipeline_layout_descriptor = wgpu::PipelineLayoutDescriptor {
-            label: Some(label),
+            label: Some("Render Pipeline Layout"),
             bind_group_layouts: &self.bind_group_layouts,
             push_constant_ranges: &[],
         };
-        let pipeline_layout = self
+        let pipeline_layout: wgpu::PipelineLayout = self
             .device
             .create_pipeline_layout(&pipeline_layout_descriptor);
 
@@ -83,7 +83,8 @@ impl<'a> Builder<'a> {
         let render_pipeline_descriptor = wgpu::RenderPipelineDescriptor {
             label: Some(label),
             layout: Some(&pipeline_layout),
-            cache: Default::default(),
+
+            cache: None,
 
             vertex: wgpu::VertexState {
                 module: &shader_module,
@@ -118,12 +119,12 @@ impl<'a> Builder<'a> {
             multiview: None,
         };
 
-        let render_pipeline = self
+        let pipeline = self
             .device
             .create_render_pipeline(&render_pipeline_descriptor);
 
         self.reset();
 
-        render_pipeline
+        pipeline
     }
 }
