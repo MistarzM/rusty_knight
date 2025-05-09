@@ -1,4 +1,4 @@
-use super::renderer_backend::ubo::{self, UBO};
+use super::renderer_backend::ubo::{self};
 use super::renderer_backend::{bind_group_layout, material::Material, pipeline};
 use crate::render::model::game_object;
 use crate::render::renderer_backend::mesh_builder;
@@ -41,7 +41,8 @@ pub struct GraphicsState<'a> {
     quad_mesh: mesh_builder::Mesh,
     triangle_material: Material,
     quad_material: Material,
-    ubo: Option<ubo::UBO>,
+    ubo: Option<ubo::UBOGroup>,
+    projection_ubo: ubo::UBO,
 }
 
 impl<'a> GraphicsState<'a> {
@@ -67,7 +68,7 @@ impl<'a> GraphicsState<'a> {
             required_limits: wgpu::Limits::default(),
             label: Some("Device"),
             memory_hints: wgpu::MemoryHints::Performance,
-            trace: Default::default(),
+            trace: wgpu::Trace::Off,
         };
 
         let (device, queue) = adapter.request_device(&device_descriptor).await.unwrap();
@@ -117,6 +118,7 @@ impl<'a> GraphicsState<'a> {
             builder.add_vertex_buffer_layout(mesh_builder::Vertex::get_layout());
             builder.add_bind_group_layout(&material_bind_group_layout);
             builder.add_bind_group_layout(&ubo_bind_group_layout);
+            builder.add_bind_group_layout(&ubo_bind_group_layout);
             render_pipeline = builder.build_pipeline("Render pipeline");
         }
 
@@ -133,6 +135,8 @@ impl<'a> GraphicsState<'a> {
             &material_bind_group_layout,
         );
 
+        let projection_ubo = ubo::UBO::new(&device, ubo_bind_group_layout);
+
         Self {
             instance,
             window,
@@ -147,6 +151,7 @@ impl<'a> GraphicsState<'a> {
             triangle_material,
             quad_material,
             ubo: None,
+            projection_ubo,
         }
     }
 
@@ -158,14 +163,27 @@ impl<'a> GraphicsState<'a> {
             ubo_bind_group_layout = builder.build("Ubo Bind Group Layout");
         }
 
-        self.ubo = Some(UBO::new(&self.device, object_count, ubo_bind_group_layout));
+        self.ubo = Some(ubo::UBOGroup::new(
+            &self.device,
+            object_count,
+            ubo_bind_group_layout,
+        ));
     }
 
-    pub fn render(
+    fn update_projection(&mut self) {
+        let fov_y: f32 = 90.0;
+        let aspect = 4.0 / 3.0;
+        let z_near = 0.1;
+        let z_far = 10.0;
+        let projection = ext::perspective(fov_y, aspect, z_near, z_far);
+        self.projection_ubo.upload(&projection, &self.queue);
+    }
+
+    fn update_transforms(
         &mut self,
         quads: &Vec<game_object::Object>,
         tris: &Vec<game_object::Object>,
-    ) -> Result<(), wgpu::SurfaceError> {
+    ) {
         let mut offset: u64 = 0;
         for i in 0..quads.len() {
             let c0 = glm::Vec4::new(1.0, 0.0, 0.0, 0.0);
@@ -199,10 +217,22 @@ impl<'a> GraphicsState<'a> {
                 .unwrap()
                 .upload(offset + i as u64, &matrix, &self.queue);
         }
+    }
+
+    pub fn render(
+        &mut self,
+        quads: &Vec<game_object::Object>,
+        tris: &Vec<game_object::Object>,
+    ) -> Result<(), wgpu::SurfaceError> {
+        self.device.poll(wgpu::MaintainBase::Wait).ok();
+
+        // upload
+        self.update_projection();
+        self.update_transforms(quads, tris);
 
         let event = self.queue.submit([]);
         let maintain = wgpu::MaintainBase::WaitForSubmissionIndex(event);
-        let _ = self.device.poll(maintain);
+        self.device.poll(maintain).ok();
 
         let drawable = self.surface.get_current_texture()?;
         let image_view_descriptor = wgpu::TextureViewDescriptor::default();
@@ -243,6 +273,7 @@ impl<'a> GraphicsState<'a> {
             renderpass.set_pipeline(&self.render_pipeline);
 
             renderpass.set_bind_group(0, &self.quad_material.bind_group, &[]);
+            renderpass.set_bind_group(0, &self.projection_ubo.bind_group, &[]);
             renderpass.set_vertex_buffer(0, self.quad_mesh.buffer.slice(0..self.quad_mesh.offset));
             renderpass.set_index_buffer(
                 self.quad_mesh.buffer.slice(self.quad_mesh.offset..),

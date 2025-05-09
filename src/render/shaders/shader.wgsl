@@ -1,6 +1,7 @@
 @group(0) @binding(0) var myTexture: texture_2d<f32>;
 @group(0) @binding(1) var mySampler: sampler;
 @group(1) @binding(0) var<uniform> model: mat4x4<f32>;
+@group(2) @binding(0) var<uniform> projection: mat4x4<f32>;
 
 struct Vertex {
     @location(0) position: vec3<f32>,

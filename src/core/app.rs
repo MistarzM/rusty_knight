@@ -13,11 +13,11 @@ pub async fn run() {
 
     let mut world = World::new();
     world.quads.push(Object {
-        position: glm::Vec3::new(0.5, 0.0, 0.0),
+        position: glm::Vec3::new(0.5, 0.0, -1.0),
         angle: 0.0,
     });
     world.tris.push(Object {
-        position: glm::Vec3::new(0.0, 0.0, 0.0),
+        position: glm::Vec3::new(0.0, 0.0, -1.5),
         angle: 0.0,
     });
     graphics_state.build_ubos_for_objects(2);
