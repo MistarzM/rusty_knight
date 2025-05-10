@@ -34,7 +34,7 @@ impl Camera {
         }
     }
 
-    pub fn spin(&mut self, d_yaw: f32, d_pitch: f32) {
+    pub fn camera_spin(&mut self, d_yaw: f32, d_pitch: f32) {
         self.yaw += d_yaw;
         if self.yaw > 360.0 {
             self.yaw -= 360.0;
@@ -60,5 +60,11 @@ impl Camera {
 
         self.right = glm::normalize(glm::cross(self.forwards, self.up));
         self.up = glm::normalize(glm::cross(self.right, self.forwards));
+    }
+
+    pub fn camera_move(&mut self, d_right: f32, d_forwards: f32) {
+        let z: f32 = self.position.z;
+        self.position = self.position + self.right * d_right + self.forwards * d_forwards;
+        self.position.z = z;
     }
 }
