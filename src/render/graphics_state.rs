@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
+use super::model::game_object;
 use super::renderer_backend::ubo::{self};
 use super::renderer_backend::{bind_group_layout, material::Material, pipeline};
-use crate::render::model::game_object;
 use crate::render::renderer_backend::mesh_builder;
 use glfw::PWindow;
 use glm::ext;
@@ -8,6 +10,8 @@ use glm::ext;
 pub struct World {
     pub quads: Vec<game_object::Object>,
     pub tris: Vec<game_object::Object>,
+    pub camera: game_object::Camera,
+    pub keys: HashMap<glfw::Key, bool>,
 }
 
 impl World {
@@ -15,16 +19,43 @@ impl World {
         World {
             quads: Vec::new(),
             tris: Vec::new(),
+            camera: game_object::Camera::new(),
+            keys: HashMap::new(),
         }
     }
 
-    pub fn update(&mut self, dt: f32) {
+    pub fn update(&mut self, dt: f32, window: &mut PWindow) {
         for i in 0..self.tris.len() {
             self.tris[i].angle += 0.001 * dt;
             if self.tris[i].angle > 360.0 {
                 self.tris[i].angle -= 360.0;
             }
         }
+
+        let mouse_pos = window.get_cursor_pos();
+        window.set_cursor_pos(640.0, 360.0);
+        let dx = (-40.0 * (mouse_pos.0 - 640.0) / 640.0) as f32;
+        let dy = (-40.0 * (mouse_pos.1 - 360.0) / 360.0) as f32;
+
+        self.camera.camera_spin(dx, dy);
+
+        let mut d_right: f32 = 0.0;
+        let mut d_forwards: f32 = 0.0;
+
+        if self.keys[&glfw::Key::W] {
+            d_forwards += 1.0;
+        }
+        if self.keys[&glfw::Key::A] {
+            d_right -= 1.0;
+        }
+        if self.keys[&glfw::Key::S] {
+            d_forwards -= 1.0;
+        }
+        if self.keys[&glfw::Key::D] {
+            d_right += 1.0;
+        }
+
+        self.camera.camera_move(d_right, d_forwards);
     }
 }
 
@@ -170,13 +201,23 @@ impl<'a> GraphicsState<'a> {
         ));
     }
 
-    fn update_projection(&mut self) {
-        let fov_y: f32 = 90.0;
+    fn update_projection(&mut self, camera: &game_object::Camera) {
+        let c0 = glm::Vec4::new(camera.right.x, camera.up.x, -camera.forwards.x, 0.0);
+        let c1 = glm::Vec4::new(camera.right.y, camera.up.y, -camera.forwards.y, 0.0);
+        let c2 = glm::Vec4::new(camera.right.z, camera.up.z, -camera.forwards.z, 0.0);
+        let a: f32 = -glm::dot(camera.right, camera.position);
+        let b: f32 = -glm::dot(camera.up, camera.position);
+        let c: f32 = glm::dot(camera.forwards, camera.position);
+        let c3 = glm::Vec4::new(a, b, c, 1.0);
+        let view = glm::Matrix4::new(c0, c1, c2, c3);
+        let fov_y: f32 = glm::radians(90.0);
         let aspect = 4.0 / 3.0;
         let z_near = 0.1;
         let z_far = 10.0;
         let projection = ext::perspective(fov_y, aspect, z_near, z_far);
-        self.projection_ubo.upload(&projection, &self.queue);
+
+        let view_proj = projection * view;
+        self.projection_ubo.upload(&view_proj, &self.queue);
     }
 
     fn update_transforms(
@@ -223,10 +264,11 @@ impl<'a> GraphicsState<'a> {
         &mut self,
         quads: &Vec<game_object::Object>,
         tris: &Vec<game_object::Object>,
+        camera: &game_object::Camera,
     ) -> Result<(), wgpu::SurfaceError> {
         self.device.poll(wgpu::MaintainBase::Wait).ok();
 
-        self.update_projection();
+        self.update_projection(camera);
 
         self.update_transforms(quads, tris);
 
