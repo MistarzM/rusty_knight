@@ -48,8 +48,9 @@ pub fn new_texture(
 ) -> wgpu::BindGroup {
     // Get absolute filepath from relative one
     let mut filepath = current_dir().unwrap();
-    filepath.push("assets/");
+    filepath.push("src/");
     filepath.push(filename);
+    //println!("{filepath:?}");
     let filepath = filepath.into_os_string().into_string().unwrap();
 
     let bytes = std::fs::read(filepath).unwrap();

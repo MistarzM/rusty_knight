@@ -145,7 +145,8 @@ impl ObjLoader {
 
     fn parse_materials(&mut self, filename: &str, materials: &mut Vec<definitions::Material>) {
         let mut full_filepath = current_dir().unwrap();
-        full_filepath.push("assets/models/");
+        full_filepath.push("assets/");
+        full_filepath.push("models/");
         full_filepath.push(filename);
         let mut filepath_str = full_filepath.into_os_string().into_string().unwrap();
 
@@ -166,7 +167,8 @@ impl ObjLoader {
         }
 
         full_filepath = current_dir().unwrap();
-        full_filepath.push("assets/models/");
+        full_filepath.push("assets/");
+        full_filepath.push("models/");
         full_filepath.push(mtl_filename);
         filepath_str = full_filepath.into_os_string().into_string().unwrap();
 
@@ -237,7 +239,8 @@ impl ObjLoader {
         self.recording = false;
 
         let mut full_filepath = current_dir().unwrap();
-        full_filepath.push("assets/models/");
+        full_filepath.push("assets/");
+        full_filepath.push("models/");
         full_filepath.push(filename);
         let filepath_str = full_filepath.into_os_string().into_string().unwrap();
 

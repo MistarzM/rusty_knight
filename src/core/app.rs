@@ -1,11 +1,11 @@
 use crate::model::world::World;
-use crate::renderer::renderer::GraphicsState;
+use crate::renderer::renderer::State;
 use crate::{model::game_object::Object, platform::game_window::GameWindow};
 use glfw::{Action, Key};
 
 pub async fn run() {
     let mut game_window = GameWindow::new("Rusty Knight");
-    let mut graphics_state = GraphicsState::new(&mut game_window.window).await;
+    let mut graphics_state = State::new(&mut game_window.window).await;
 
     graphics_state.window.set_framebuffer_size_polling(true);
     graphics_state.window.set_key_polling(true);
@@ -14,6 +14,8 @@ pub async fn run() {
     graphics_state
         .window
         .set_cursor_mode(glfw::CursorMode::Hidden);
+
+    graphics_state.load_assets();
 
     let mut world = World::new();
     world.quads.push(Object {

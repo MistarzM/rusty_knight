@@ -1,5 +1,5 @@
 use crate::constants::graphics;
-use glfw::{fail_on_errors, Context, Glfw, GlfwReceiver, PWindow, WindowEvent};
+use glfw::{fail_on_errors, Glfw, GlfwReceiver, PWindow, WindowEvent, WindowHint};
 
 pub struct GameWindow {
     pub glfw: Glfw,
@@ -10,7 +10,9 @@ pub struct GameWindow {
 impl GameWindow {
     pub fn new(title: &str) -> Self {
         let mut glfw = glfw::init(fail_on_errors!()).unwrap();
+        glfw.window_hint(WindowHint::ClientApi(glfw::ClientApiHint::NoApi));
 
+        #[allow(unused_mut)]
         let (mut window, events) = glfw
             .create_window(
                 graphics::MAP_WDITH_PIXELS,
@@ -20,7 +22,7 @@ impl GameWindow {
             )
             .unwrap();
 
-        window.make_current();
+        //window.make_current();
 
         Self {
             glfw,

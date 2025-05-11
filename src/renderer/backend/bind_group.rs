@@ -37,20 +37,19 @@ impl<'a> Builder<'a> {
         self.entries.push(wgpu::BindGroupEntry {
             binding: self.entries.len() as u32,
             resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                buffer,
-                offset,
+                buffer: &buffer,
+                offset: offset,
                 size: None,
             }),
-        });
+        })
     }
 
     pub fn build(&mut self, label: &str) -> wgpu::BindGroup {
-        let descriptor = wgpu::BindGroupDescriptor {
-            label: Some(label),
+        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: self.layout.unwrap(),
             entries: &self.entries,
-        };
-        let bind_group = self.device.create_bind_group(&descriptor);
+            label: Some(label),
+        });
 
         self.reset();
 

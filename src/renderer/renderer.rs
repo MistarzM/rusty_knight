@@ -4,17 +4,17 @@ use super::backend::ubo::{self};
 use super::backend::{bind_group_layout, pipeline, texture};
 use crate::model::game_object;
 use crate::renderer::backend::{definitions, mesh_builder};
-use glfw::PWindow;
+use glfw::Window;
 use glm::ext;
 
-pub struct GraphicsState<'a> {
+pub struct State<'a> {
     instance: wgpu::Instance,
     surface: wgpu::Surface<'a>,
     device: wgpu::Device,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
     pub size: (i32, i32),
-    pub window: &'a mut PWindow,
+    pub window: &'a mut Window,
     render_pipelines: HashMap<definitions::PipelineType, wgpu::RenderPipeline>,
     triangle_mesh: wgpu::Buffer,
     quad_mesh: definitions::Mesh,
@@ -28,8 +28,8 @@ pub struct GraphicsState<'a> {
     depth_buffer: texture::Texture,
 }
 
-impl<'a> GraphicsState<'a> {
-    pub async fn new(window: &'a mut PWindow) -> Self {
+impl<'a> State<'a> {
+    pub async fn new(window: &'a mut Window) -> Self {
         let size = window.get_framebuffer_size();
 
         let instance_descriptor = wgpu::InstanceDescriptor {
@@ -84,7 +84,7 @@ impl<'a> GraphicsState<'a> {
         let render_pipelines = Self::build_pipelines(&device, &config, &bind_group_layouts);
 
         let quad_material = texture::new_texture(
-            "levels/level_2_design.png",
+            "../assets/levels/level_2_design.png",
             &device,
             &queue,
             "Quad Material",
@@ -93,7 +93,7 @@ impl<'a> GraphicsState<'a> {
                 .unwrap(),
         );
         let triangle_material = texture::new_texture(
-            "levels/level_1_design.png",
+            "../assets/levels/level_1_design.png",
             &device,
             &queue,
             "Triangle Material",
@@ -279,7 +279,7 @@ impl<'a> GraphicsState<'a> {
             let m1 = glm::Matrix4::new(c0, c1, c2, c3);
             let m2 = glm::Matrix4::new(c0, c1, c2, c3);
 
-            let matrix = ext::rotate(&m1, quads[i].angle, glm::Vec3::new(0.0, 0.0, 0.1))
+            let matrix = ext::rotate(&m1, quads[i].angle, glm::Vec3::new(0.0, 0.0, 1.0))
                 * ext::translate(&m2, quads[i].position);
             self.ubo
                 .as_mut()
@@ -296,7 +296,7 @@ impl<'a> GraphicsState<'a> {
             let c3 = glm::Vec4::new(0.0, 0.0, 0.0, 1.0);
             let m1 = glm::Matrix4::new(c0, c1, c2, c3);
             let m2 = glm::Matrix4::new(c0, c1, c2, c3);
-            let matrix = ext::rotate(&m1, tris[i].angle, glm::Vec3::new(0.0, 0.0, 0.1))
+            let matrix = ext::rotate(&m1, tris[i].angle, glm::Vec3::new(0.0, 0.0, 1.0))
                 * ext::translate(&m2, tris[i].position);
             self.ubo
                 .as_mut()
@@ -345,7 +345,7 @@ impl<'a> GraphicsState<'a> {
 
         let event = self.queue.submit([]);
         let maintain = wgpu::MaintainBase::WaitForSubmissionIndex(event);
-        self.device.poll(maintain).ok();
+        let _ = self.device.poll(maintain);
 
         let drawable = self.surface.get_current_texture()?;
         let image_view_descriptor = wgpu::TextureViewDescriptor::default();
@@ -372,10 +372,19 @@ impl<'a> GraphicsState<'a> {
             },
         };
 
+        let depth_stencil_attachment = wgpu::RenderPassDepthStencilAttachment {
+            view: &self.depth_buffer.view,
+            depth_ops: Some(wgpu::Operations {
+                load: wgpu::LoadOp::Clear(1.0),
+                store: wgpu::StoreOp::Store,
+            }),
+            stencil_ops: None,
+        };
+
         let render_pass_descriptor = wgpu::RenderPassDescriptor {
             label: Some("Render Pass"),
             color_attachments: &[Some(color_attachment)],
-            depth_stencil_attachment: None,
+            depth_stencil_attachment: Some(depth_stencil_attachment),
             occlusion_query_set: None,
             timestamp_writes: None,
         };

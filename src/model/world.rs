@@ -1,3 +1,5 @@
+use crate::constants;
+
 use super::game_object;
 use std::collections::HashMap;
 
@@ -29,7 +31,7 @@ impl World {
         self.keys.insert(key, state);
     }
 
-    pub fn update(&mut self, dt: f32, window: &mut glfw::PWindow) {
+    pub fn update(&mut self, dt: f32, window: &mut glfw::Window) {
         for i in 0..self.tris.len() {
             self.tris[i].angle += 0.001 * dt;
             if self.tris[i].angle > 360.0 {
@@ -48,16 +50,16 @@ impl World {
         let mut d_forwards: f32 = 0.0;
 
         if self.keys[&glfw::Key::W] {
-            d_forwards += 1.0;
+            d_forwards += constants::gameplay::MOVEMENT_SPEED;
         }
         if self.keys[&glfw::Key::A] {
-            d_right -= 1.0;
+            d_right -= constants::gameplay::MOVEMENT_SPEED;
         }
         if self.keys[&glfw::Key::S] {
-            d_forwards -= 1.0;
+            d_forwards -= constants::gameplay::MOVEMENT_SPEED;
         }
         if self.keys[&glfw::Key::D] {
-            d_right += 1.0;
+            d_right += constants::gameplay::MOVEMENT_SPEED;
         }
 
         self.camera.camera_move(d_right, d_forwards);
