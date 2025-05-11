@@ -1,5 +1,6 @@
-use crate::render::graphics_state::{GraphicsState, World};
-use crate::{platform::game_window::GameWindow, render::model::game_object::Object};
+use crate::renderer::model::world::World;
+use crate::renderer::renderer::GraphicsState;
+use crate::{platform::game_window::GameWindow, renderer::model::game_object::Object};
 use glfw::{Action, Key};
 
 pub async fn run() {
