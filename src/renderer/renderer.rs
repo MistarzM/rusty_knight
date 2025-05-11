@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use super::backend::ubo::{self};
 use super::backend::{bind_group_layout, pipeline, texture};
-use super::model::game_object;
+use crate::model::game_object;
 use crate::renderer::backend::{definitions, mesh_builder};
 use glfw::PWindow;
 use glm::ext;

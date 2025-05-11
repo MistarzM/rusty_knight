@@ -54,7 +54,7 @@ impl<'a> Builder<'a> {
 
     pub fn build(&mut self, label: &str) -> wgpu::RenderPipeline {
         let mut filepath = current_dir().unwrap();
-        filepath.push("src/render/");
+        filepath.push("src/");
         filepath.push(self.shader_filename.as_str());
         let filepath = filepath.into_os_string().into_string().unwrap();
         let source_code = fs::read_to_string(filepath).expect("Can't read source code!");

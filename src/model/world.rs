@@ -1,4 +1,4 @@
-use crate::renderer::model::game_object;
+use super::game_object;
 use std::collections::HashMap;
 
 pub struct World {
@@ -10,12 +10,23 @@ pub struct World {
 
 impl World {
     pub fn new() -> Self {
-        World {
+        let mut world = World {
             quads: Vec::new(),
             tris: Vec::new(),
             camera: game_object::Camera::new(),
             keys: HashMap::new(),
-        }
+        };
+
+        world.keys.insert(glfw::Key::W, false);
+        world.keys.insert(glfw::Key::A, false);
+        world.keys.insert(glfw::Key::S, false);
+        world.keys.insert(glfw::Key::D, false);
+
+        world
+    }
+
+    pub fn set_key(&mut self, key: glfw::Key, state: bool) {
+        self.keys.insert(key, state);
     }
 
     pub fn update(&mut self, dt: f32, window: &mut glfw::PWindow) {

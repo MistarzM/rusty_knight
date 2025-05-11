@@ -1,6 +1,6 @@
-use crate::renderer::model::world::World;
+use crate::model::world::World;
 use crate::renderer::renderer::GraphicsState;
-use crate::{platform::game_window::GameWindow, renderer::model::game_object::Object};
+use crate::{model::game_object::Object, platform::game_window::GameWindow};
 use glfw::{Action, Key};
 
 pub async fn run() {
@@ -41,32 +41,11 @@ pub async fn run() {
                 }
 
                 // Movement
-                glfw::WindowEvent::Key(Key::W, _, Action::Press, _) => {
-                    world.keys.insert(glfw::Key::W, true);
+                glfw::WindowEvent::Key(key, _, Action::Press, _) => {
+                    world.set_key(key, true);
                 }
-                glfw::WindowEvent::Key(Key::W, _, Action::Release, _) => {
-                    world.keys.insert(glfw::Key::W, false);
-                }
-
-                glfw::WindowEvent::Key(Key::A, _, Action::Press, _) => {
-                    world.keys.insert(glfw::Key::A, true);
-                }
-                glfw::WindowEvent::Key(Key::A, _, Action::Release, _) => {
-                    world.keys.insert(glfw::Key::A, false);
-                }
-
-                glfw::WindowEvent::Key(Key::S, _, Action::Press, _) => {
-                    world.keys.insert(glfw::Key::S, true);
-                }
-                glfw::WindowEvent::Key(Key::S, _, Action::Release, _) => {
-                    world.keys.insert(glfw::Key::S, false);
-                }
-
-                glfw::WindowEvent::Key(Key::D, _, Action::Press, _) => {
-                    world.keys.insert(glfw::Key::D, true);
-                }
-                glfw::WindowEvent::Key(Key::D, _, Action::Release, _) => {
-                    world.keys.insert(glfw::Key::D, false);
+                glfw::WindowEvent::Key(key, _, Action::Release, _) => {
+                    world.keys.insert(key, false);
                 }
 
                 // Window was moved
