@@ -26,7 +26,7 @@ impl UBOGroup {
         let mut bind_groups: Vec<wgpu::BindGroup> = Vec::new();
         for i in 0..object_count {
             let mut builder = bind_group::Builder::new(device);
-            builder.set_layout(&layout);
+            builder.set_layout(layout);
             builder.add_buffer(&buffer, i as u64 * allignment);
             bind_groups.push(builder.build("Matrix"));
         }
@@ -64,7 +64,7 @@ impl UBO {
         let bind_group: wgpu::BindGroup;
         {
             let mut builder = bind_group::Builder::new(device);
-            builder.set_layout(&layout);
+            builder.set_layout(layout);
             builder.add_buffer(&buffer, 0);
             bind_group = builder.build("Matrix");
         }

@@ -414,6 +414,8 @@ impl<'a> GraphicsState<'a> {
                 );
                 renderpass.draw(0..3, 0..1);
             }
+
+            self.render_model(&self.models[0], &mut renderpass);
         }
         self.queue.submit(std::iter::once(command_encoder.finish()));
         self.device.poll(wgpu::MaintainBase::wait()).ok();
